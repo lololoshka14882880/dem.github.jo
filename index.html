@@ -10,31 +10,155 @@
   </head>
   <body>
  <h2>21.01.2026</h2>
-<p><a>p = 3, q = 5
-n = 15
-φ(n) = 8
-e = 3
-d = 3
-Открытый ключ: (15, 3)
-Закрытый ключ: (15, 3)
-p = 5, q = 11
-n = 55
-φ(n) = 40
-e = 3
-d = 27
-Открытый ключ: (55, 3)
-Закрытый ключ: (55, 27)</a></p>
+<p><a>import math
 
+def gcd(a, b):
+    """Возвращает НОД(a, b)"""
+    while b:
+        a, b = b, a % b
+    return a
 
+def find_e(phi_n):
+    """Находит подходящее e: 1 < e < phi_n, gcd(e, phi_n) == 1"""
+    for e in range(2, phi_n):
+        if gcd(e, phi_n) == 1:
+            return e
+    raise ValueError("Не удалось найти подходящее e")
 
+def mod_inverse(e, phi_n):
+    """Находит d такое, что (e * d) % phi_n == 1"""
+    # Простой перебор (для учебных целей; в реальности используют расширенный алгоритм Евклида)
+    for d in range(1, phi_n):
+        if (e * d) % phi_n == 1:
+            return d
+    raise ValueError("Обратный элемент не найден")
 
+def is_prime(num):
+    """Проверяет, является ли число простым (простая реализация)"""
+    if num < 2:
+        return False
+    for i in range(2, int(math.sqrt(num)) + 1):
+        if num % i == 0:
+            return False
+    return True
 
-
-
-
+def generate_rsa_keys(p, q):
+    if not (is_prime(p) and is_prime(q)):
+        raise ValueError("Оба числа p и q должны быть простыми!")
     
+    n = p * q
+    phi_n = (p - 1) * (q - 1)
     
-    <h2>17.01.2026</h2>
+    e = find_e(phi_n)
+    d = mod_inverse(e, phi_n)
+    
+    public_key = (n, e)
+    private_key = (n, d)
+    
+    print(f"p = {p}, q = {q}")
+    print(f"n = p × q = {n}")
+    print(f"φ(n) = (p−1)(q−1) = {phi_n}")
+    print(f"Выбрано e = {e} (НОД(e, φ(n)) = {gcd(e, phi_n)})")
+    print(f"Найдено d = {d}, так как ({e} × {d}) mod {phi_n} = {(e * d) % phi_n}")
+    print()
+    print(f"Открытый ключ: (n, e) = {public_key}")
+    print(f"Закрытый ключ: (n, d) = {private_key}")
+    
+    if e == d:
+        print("\n⚠️  Внимание: открытый и закрытый ключи совпадают! Это возможно при маленьких p и q, но небезопасно в реальных системах.")
+    
+    return public_key, private_key
+
+# Пример использования:
+if __name__ == "__main__":
+    # Ваш пример:
+    generate_rsa_keys(3, 5)
+    
+    print("\n" + "="*50 + "\n")
+     # Пример с разными e и d:
+    generate_rsa_keys(5, 11)</a></p>
+  
+    <p><a>import math
+
+def gcd(a, b):
+    while b:
+        a, b = b, a % b
+    return a
+
+def mod_inverse(e, phi_n):
+    # Простой перебор (для учебных целей)
+    for d in range(1, phi_n):
+        if (e * d) % phi_n == 1:
+            return d
+    raise ValueError("Обратный элемент не найден")
+
+def is_prime(num):
+    if num < 2:
+        return False
+    for i in range(2, int(math.sqrt(num)) + 1):
+        if num % i == 0:
+            return False
+    return True
+
+def generate_rsa_keys(p, q):
+    if not (is_prime(p) and is_prime(q)):
+        raise ValueError("p и q должны быть простыми числами!")
+    n = p * q
+    phi_n = (p - 1) * (q - 1)
+    
+    # Находим e (наименьшее подходящее)
+    e = None
+    for candidate in range(2, phi_n):
+        if gcd(candidate, phi_n) == 1:
+            e = candidate
+            break
+    if e is None:
+        raise ValueError("Не удалось найти e")
+    
+    d = mod_inverse(e, phi_n)
+    return (n, e), (n, d)  # public, private
+
+def encrypt(message, public_key):
+    n, e = public_key
+    if message >= n:
+        raise ValueError(f"Сообщение m={message} должно быть меньше n={n}")
+    ciphertext = pow(message, e, n)  # m^e mod n
+    return ciphertext
+
+def decrypt(ciphertext, private_key):
+    n, d = private_key
+    plaintext = pow(ciphertext, d, n)  # c^d mod n
+    return plaintext
+
+# === Пример использования ===
+if __name__ == "__main__":
+    p, q = 3, 5
+    m = 2  # "анализ готов"
+
+    print("🔹 Генерация ключей...")
+    public_key, private_key = generate_rsa_keys(p, q)
+    print(f"Открытый ключ (n, e): {public_key}")
+    print(f"Закрытый ключ (n, d): {private_key}\n")
+
+    print("🔹 Шифрование...")
+    c = encrypt(m, public_key)
+    print(f"Исходное сообщение: m = {m}")
+    print(f"Шифротекст: C = {c}\n")
+
+    print("🔹 Расшифровка...")
+    m_decrypted = decrypt(c, private_key)
+    print(f"Расшифрованное сообщение: M = {m_decrypted}")
+
+    if m == m_decrypted:
+        print("\n✅ Успех! Сообщение восстановлено корректно.")
+    else:
+        print("\n❌ Ошибка! Сообщение не совпадает.")
+
+    print("\n💡 В реальных системах n содержит 2048+ бит (~617 десятичных цифр).")</a></p>
+
+
+
+  <h2>17.01.2026</h2>
     <p><a>Индексы букв:
       Ф → 20, Х → 21, Н → 13, З → 7, К → 10, Ч → 23
     Подбор ключа:При k=5
